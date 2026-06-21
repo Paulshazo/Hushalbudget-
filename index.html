@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Hushållsbudget</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4F3;color:#1A2926;min-height:100vh;padding-bottom:80px;max-width:480px;margin:0 auto}
+:root{--teal:#2A7A6F;--teal-light:#3D9B8E;--teal-pale:#C8E6E2;--border:#D4E2DF;--muted:#5A706B;--bg:#F0F4F3}
+
+/* HEADER */
+.header{background:var(--teal);padding:18px 16px 14px;position:sticky;top:0;z-index:10}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.header h1{color:white;font-size:16px;font-weight:700}
+.save-status{color:rgba(255,255,255,0.6);font-size:11px}
+.month-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px}
+.month-nav button{background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.month-label{color:white;font-weight:600;font-size:15px;min-width:150px;text-align:center}
+.balance-box{background:rgba(255,255,255,0.15);border-radius:12px;padding:12px 14px}
+.balance-title{color:rgba(255,255,255,0.7);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.balance-amount{color:white;font-size:26px;font-weight:700;letter-spacing:-1px;margin-bottom:8px}
+.meter-row{display:flex;justify-content:flex-end;margin-bottom:6px}
+.meter-pct{color:rgba(255,255,255,0.7);font-size:11px}
+.meter-track{height:6px;background:rgba(255,255,255,0.2);border-radius:99px;overflow:hidden}
+.meter-fill{height:100%;border-radius:99px;transition:width .5s ease,background .3s}
+
+/* BOTTOM TABS */
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:white;border-top:1px solid var(--border);display:flex;z-index:10}
+.tab-btn{flex:1;border:none;background:none;padding:10px 0 14px;font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:#8AA8A3;font-weight:400}
+.tab-btn.active{color:var(--teal);font-weight:700}
+.tab-icon{font-size:20px}
+
+/* CONTENT */
+.content{padding:14px 14px 0}
+
+/* CARDS */
+.card{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:12px}
+.card-head{padding:12px 16px;font-weight:700;font-size:13px;border-bottom:1px solid #E8EFED}
+.row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #E8EFED}
+.row:last-child{border-bottom:none}
+
+/* SUMMARY GRID */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.sum-chip{background:white;border-radius:12px;padding:11px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.sum-chip-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.sum-chip-val{font-size:14px;font-weight:700}
+
+/* INPUTS */
+input,select{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;background:#F8FBFA;color:#1A2926;font-family:inherit;outline:none}
+input:focus,select:focus{border-color:var(--teal);background:white}
+.kr-wrap{position:relative}
+.kr-wrap input{padding-left:30px}
+.kr-sym{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#8AA8A3;font-size:13px;pointer-events:none}
+label.lbl{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+
+/* FORM */
+.form-pad{padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.who-btn{padding:9px;border-radius:8px;border:2px solid transparent;font-weight:600;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-primary{background:var(--teal);color:white;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;width:100%;font-family:inherit}
+.btn-primary:active{background:var(--teal-light)}
+
+/* FILTER PILLS */
+.filter-row{display:flex;gap:6px;margin-bottom:10px}
+.filter-pill{padding:6px 14px;border-radius:99px;border:none;cursor:pointer;font-weight:600;font-size:13px;font-family:inherit}
+
+/* PURCHASE ITEM */
+.p-date{font-size:11px;color:#8AA8A3;min-width:20px}
+.p-desc{flex:1;min-width:0}
+.p-desc-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-desc-cat{font-size:11px;color:#8AA8A3}
+.who-badge{border-radius:99px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap}
+.p-amt{font-weight:700;font-size:14px;min-width:68px;text-align:right}
+.btn-rm{background:none;border:none;color:#C0C8C6;font-size:16px;cursor:pointer;padding:2px 4px;flex-shrink:0}
+
+/* FIXED ROW */
+.fixed-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding-bottom:10px}
+.btn-add-fixed{display:block;width:calc(100% - 32px);margin:4px 16px 14px;background:none;border:1.5px dashed var(--border);border-radius:8px;color:#8AA8A3;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* TOAST */
+.toast{position:fixed;top:140px;left:50%;transform:translateX(-50%);background:#1A2926;color:white;border-radius:99px;padding:8px 20px;font-size:13px;font-weight:500;z-index:20;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+
+/* INFO BOX */
+.info-box{background:#E8EFED;border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+
+.empty{padding:24px;color:#8AA8A3;font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1>🏠 Hushållsbudget</h1>
+    <span class="save-status" id="saveStatus">✓ Sparat</span>
+  </div>
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <span class="month-label" id="monthLabel"></span>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="balance-box">
+    <div class="balance-title">Kvar att spendera</div>
+    <div class="balance-amount" id="balanceAmt">0 kr</div>
+    <div class="meter-row"><span class="meter-pct" id="meterPct">0% av buffert använt</span></div>
+    <div class="meter-track"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="setTab('oversikt',this)"><span class="tab-icon">📊</span>Översikt</button>
+  <button class="tab-btn" onclick="setTab('inkop',this)"><span class="tab-icon">🛒</span>Köp</button>
+  <button class="tab-btn" onclick="setTab('inst',this)"><span class="tab-icon">⚙️</span>Inställn.</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="content">
+
+  <!-- ÖVERSIKT -->
+  <div id="tab-oversikt">
+    <div class="sum-grid">
+      <div class="sum-chip"><div class="sum-chip-label">Inkomst</div><div class="sum-chip-val" id="s-income">0 kr</div></div>
+      <div class="sum-chip"><div class="sum-chip-label">Fasta kost.</div><div class="sum-chip-val" id="s-fixed">0 kr</div></div>
+      <div class="sum-chip"><div class="sum-chip-label">Inköp</div><div class="sum-chip-val" id="s-purch">0 kr</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">Utgifter per kategori</div>
+      <div id="catList"><div class="empty">Inga inköp loggade ännu</div></div>
+    </div>
+    <div class="card" id="personCard" style="display:none">
+      <div class="card-head">Fördelning</div>
+      <div id="personList"></div>
+    </div>
+  </div>
+
+  <!-- INKÖP -->
+  <div id="tab-inkop" style="display:none">
+    <div class="card">
+      <div class="card-head">Nytt köp</div>
+      <div class="form-pad">
+        <input id="pDesc" placeholder="Beskrivning, t.ex. ICA" />
+        <div class="two-col">
+          <div class="kr-wrap"><span class="kr-sym">kr</span><input type="number" inputmode="numeric" id="pAmt" placeholder="Belopp" /></div>
+          <select id="pCat">
+            <option>🛒 Mat</option><option>🚗 Transport</option><option>🎬 Nöje</option>
+            <option>💊 Hälsa</option><option>👕 Kläder</option><option>🏠 Hem</option><option>📦 Övrigt</option>
+          </select>
+        </div>
+        <div class="three-col" id="whoButtons"></div>
+        <button class="btn-primary" onclick="addPurchase()">Lägg till köp</button>
+      </div>
+    </div>
+    <div class="filter-row" id="filterRow"></div>
+    <div class="card"><div id="purchaseList"><div class="empty">Inga köp att visa</div></div></div>
+  </div>
+
+  <!-- INSTÄLLNINGAR -->
+  <div id="tab-inst" style="display:none">
+    <div class="card">
+      <div class="card-head">💰 Inkomster</div>
+      <div class="form-pad">
+        <div><label class="lbl">Din lön (kr/mån)</label><div class="kr-wrap"><span class="kr-sym">kr</span><input type="number" inputmode="numeric" id="incomeMe" placeholder="0" oninput="save()" /></div></div>
+        <div><label class="lbl">Fruns lön (kr/mån)</label><div class="kr-wrap"><span class="kr-sym">kr</span><input type="number" inputmode="numeric" id="incomeSpouse" placeholder="0" oninput="save()" /></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">📋 Fasta kostnader</div>
+      <div style="padding:10px 16px 0" id="fixedList"></div>
+      <button class="btn-add-fixed" onclick="addFixed()">＋ Lägg till kostnad</button>
+    </div>
+    <div class="info-box">
+      <strong>ℹ️ Delad data</strong><br>
+      Alla ändringar sparas i din webbläsare. Öppna samma webbadress på din frus telefon – ni delar samma budget.
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────
+const WHO = [
+  {v:'jag', l:'Jag',  bg:'#DBEAFE', col:'#1D4ED8'},
+  {v:'fru', l:'Fru',  bg:'#FCE7F3', col:'#BE185D'},
+  {v:'bada',l:'Båda', bg:'#C8E6E2', col:'#2A7A6F'},
+];
+const CAT_MAP = {'🛒 Mat':'🛒','🚗 Transport':'🚗','🎬 Nöje':'🎬','💊 Hälsa':'💊','👕 Kläder':'👕','🏠 Hem':'🏠','📦 Övrigt':'📦'};
+
+let currentDate = new Date();
+let currentWho = 'jag';
+let currentFilter = 'alla';
+let saveTimer = null;
+let fixedIdCounter = 200;
+
+function monthKey() {
+  return `budget_${currentDate.getFullYear()}_${String(currentDate.getMonth()+1).padStart(2,'0')}`;
+}
+
+function getState() {
+  try {
+    const raw = localStorage.getItem(monthKey());
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {
+    incomeMe: '', incomeSpouse: '',
+    fixed: [{id:1,name:'Hyra',amount:''},{id:2,name:'El',amount:''},{id:3,name:'Internet',amount:''}],
+    purchases: []
+  };
+}
+
+function setState(s) {
+  try { localStorage.setItem(monthKey(), JSON.stringify(s)); } catch(e) {}
+}
+
+// ── SAVE WITH DEBOUNCE ───────────────────────────────────────
+function save() {
+  document.getElementById('saveStatus').textContent = 'Sparar…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const s = getState();
+    s.incomeMe = document.getElementById('incomeMe').value;
+    s.incomeSpouse = document.getElementById('incomeSpouse').value;
+    setState(s);
+    updateSummary();
+    document.getElementById('saveStatus').textContent = '✓ Sparat';
+  }, 500);
+}
+
+// ── MONTH NAV ────────────────────────────────────────────────
+const MONTHS = ['Januari','Februari','Mars','April','Maj','Juni','Juli','Augusti','September','Oktober','November','December'];
+
+function changeMonth(d) {
+  currentDate.setMonth(currentDate.getMonth() + d);
+  render();
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+let currentTab = 'oversikt';
+function setTab(name, btn) {
+  ['oversikt','inkop','inst'].forEach(t => document.getElementById('tab-'+t).style.display = t===name?'block':'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = name;
+}
+
+// ── WHO BUTTONS ──────────────────────────────────────────────
+function renderWhoButtons() {
+  const c = document.getElementById('whoButtons');
+  c.innerHTML = WHO.map(w => `
+    <button class="who-btn" id="who-${w.v}" onclick="selectWho('${w.v}')"
+      style="background:${currentWho===w.v?w.bg:'#F0F4F3'};color:${currentWho===w.v?w.col:'#5A706B'};border-color:${currentWho===w.v?w.col:'transparent'}">
+      ${w.l}
+    </button>`).join('');
+}
+
+function selectWho(v) {
+  currentWho = v;
+  renderWhoButtons();
+}
+
+// ── FILTER PILLS ─────────────────────────────────────────────
+function renderFilterRow() {
+  const r = document.getElementById('filterRow');
+  const opts = [['alla','Alla'],['jag','Jag'],['fru','Fru']];
+  r.innerHTML = opts.map(([v,l]) => `
+    <button class="filter-pill" onclick="setFilter('${v}',this)"
+      style="background:${currentFilter===v?'var(--teal)':'white'};color:${currentFilter===v?'white':'#5A706B'}">
+      ${l}
+    </button>`).join('');
+}
+
+function setFilter(v) {
+  currentFilter = v;
+  renderFilterRow();
+  renderPurchases();
+}
+
+// ── PURCHASES ────────────────────────────────────────────────
+function addPurchase() {
+  const desc = document.getElementById('pDesc').value.trim();
+  const amt  = parseFloat(document.getElementById('pAmt').value);
+  const cat  = document.getElementById('pCat').value;
+  if (!desc || !amt) { showToast('⚠️ Fyll i beskrivning och belopp'); return; }
+  const s = getState();
+  s.purchases.unshift({ id: Date.now(), desc, amount: amt, who: currentWho, cat, day: new Date().getDate() });
+  setState(s);
+  document.getElementById('pDesc').value = '';
+  document.getElementById('pAmt').value = '';
+  renderPurchases();
+  updateSummary();
+  showToast('✓ Köp tillagt');
+}
+
+function removePurchase(id) {
+  const s = getState();
+  s.purchases = s.purchases.filter(p => p.id !== id);
+  setState(s);
+  renderPurchases();
+  updateSummary();
+}
+
+function renderPurchases() {
+  const s = getState();
+  const list = document.getElementById('purchaseList');
+  const items = currentFilter === 'alla' ? s.purchases : s.purchases.filter(p => p.who === currentFilter);
+  if (!items.length) { list.innerHTML = '<div class="empty">Inga köp att visa</div>'; return; }
+  list.innerHTML = items.map(p => {
+    const w = WHO.find(x => x.v === p.who);
+    return `<div class="row">
+      <span class="p-date">${String(p.day).padStart(2,'0')}</span>
+      <div class="p-desc">
+        <div class="p-desc-name">${esc(p.desc)}</div>
+        <div class="p-desc-cat">${p.cat}</div>
+      </div>
+      <span class="who-badge" style="background:${w.bg};color:${w.col}">${w.l}</span>
+      <span class="p-amt">${fmtNum(p.amount)}</span>
+      <button class="btn-rm" onclick="removePurchase(${p.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── FIXED COSTS ──────────────────────────────────────────────
+function addFixed() {
+  const s = getState();
+  s.fixed.push({ id: ++fixedIdCounter, name: '', amount: '' });
+  setState(s);
+  renderFixed();
+}
+
+function updateFixed(id, field, val) {
+  const s = getState();
+  const f = s.fixed.find(x => x.id === id);
+  if (f) f[field] = val;
+  setState(s);
+  updateSummary();
+}
+
+function removeFixed(id) {
+  const s = getState();
+  s.fixed = s.fixed.filter(f => f.id !== id);
+  setState(s);
+  renderFixed();
+  updateSummary();
+}
+
+function renderFixed() {
+  const s = getState();
+  const el = document.getElementById('fixedList');
+  el.innerHTML = s.fixed.map(f => `
+    <div class="fixed-row">
+      <input placeholder="Kostnadsnamn" value="${esc(f.name)}" oninput="updateFixed(${f.id},'name',this.value)">
+      <div class="kr-wrap" style="max-width:110px"><span class="kr-sym">kr</span>
+        <input type="number" inputmode="numeric" placeholder="0" value="${f.amount}" oninput="updateFixed(${f.id},'amount',this.value)" style="padding-left:30px">
+      </div>
+      <button class="btn-rm" style="font-size:18px" onclick="removeFixed(${f.id})">✕</button>
+    </div>`).join('');
+}
+
+// ── SUMMARY ──────────────────────────────────────────────────
+function fmtNum(n) { return Number(n||0).toLocaleString('sv-SE') + ' kr'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function updateSummary() {
+  const s = getState();
+  const income = (parseFloat(s.incomeMe)||0) + (parseFloat(s.incomeSpouse)||0);
+  const fixed  = s.fixed.reduce((a,x) => a + (parseFloat(x.amount)||0), 0);
+  const purch  = s.purchases.reduce((a,x) => a + (parseFloat(x.amount)||0), 0);
+  const buffer = income - fixed;
+  const balance= buffer - purch;
+  const pct    = buffer > 0 ? Math.min(100, Math.round((purch/buffer)*100)) : 0;
+
+  document.getElementById('balanceAmt').textContent = fmtNum(balance);
+  document.getElementById('meterPct').textContent = pct + '% av buffert använt';
+  document.getElementById('meterFill').style.width = pct + '%';
+  document.getElementById('meterFill').style.background = pct > 90 ? '#FCA5A5' : pct > 70 ? '#FCD34D' : 'white';
+  document.getElementById('s-income').textContent = fmtNum(income);
+  document.getElementById('s-fixed').textContent  = fmtNum(fixed);
+  document.getElementById('s-purch').textContent  = fmtNum(purch);
+
+  // Categories
+  const cats = {};
+  s.purchases.forEach(p => { cats[p.cat] = (cats[p.cat]||0) + p.amount; });
+  const catEl = document.getElementById('catList');
+  if (!Object.keys(cats).length) {
+    catEl.innerHTML = '<div class="empty">Inga inköp loggade ännu</div>';
+  } else {
+    catEl.innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,amt]) =>
+      `<div class="row"><span style="flex:1">${cat}</span><span style="font-weight:700">${fmtNum(amt)}</span></div>`
+    ).join('');
+  }
+
+  // Per person
+  const personCard = document.getElementById('personCard');
+  const personList = document.getElementById('personList');
+  const personRows = WHO.map(w => {
+    const tot = s.purchases.filter(p => p.who === w.v).reduce((a,p) => a+p.amount, 0);
+    return tot ? `<div class="row"><span class="who-badge" style="background:${w.bg};color:${w.col}">${w.l}</span><span style="margin-left:auto;font-weight:700">${fmtNum(tot)}</span></div>` : '';
+  }).join('');
+  if (personRows) { personCard.style.display='block'; personList.innerHTML = personRows; }
+  else personCard.style.display='none';
+}
+
+// ── FULL RENDER ──────────────────────────────────────────────
+function render() {
+  document.getElementById('monthLabel').textContent = MONTHS[currentDate.getMonth()] + ' ' + currentDate.getFullYear();
+  const s = getState();
+  document.getElementById('incomeMe').value     = s.incomeMe;
+  document.getElementById('incomeSpouse').value = s.incomeSpouse;
+  renderFixed();
+  renderWhoButtons();
+  renderFilterRow();
+  renderPurchases();
+  updateSummary();
+}
+
+// Enter on amount field
+document.getElementById('pAmt').addEventListener('keydown', e => { if(e.key==='Enter') addPurchase(); });
+
+render();
+</script>
+</body>
+</html>
